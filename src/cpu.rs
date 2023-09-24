@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
+
 #[repr(u8)]
 #[derive(Copy, Clone)]
 enum Flag {
@@ -7,41 +9,46 @@ enum Flag {
     ZERO = 1,
 }
 
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+enum Register {
+    A,
+    B,
+}
+
 struct Cpu {
-    register_a: u8,
-    register_b: u8,
+    registers: HashMap<Register, u8>,
     flags: u8,
 }
 
 impl Cpu {
     fn new() -> Self {
-        Self {
-            register_a: 0,
-            register_b: 0,
+        let mut cpu = Self {
+            registers: HashMap::new(),
             flags: 0,
-        }
+        };
+        cpu.reset();
+
+        cpu
     }
 
     fn reset(&mut self) {
-        self.register_a = 0;
-        self.register_b = 0;
+        self.registers.insert(Register::A, 0);
+        self.registers.insert(Register::B, 0);
         self.flags = 0;
     }
 
-    fn register_a(&self) -> u8 {
-        self.register_a
+    fn register(&mut self, register: Register) -> u8 {
+        if let Some(content) = self.registers.get(&register) {
+            content.clone()
+        } else {
+            self.registers.insert(register, 0);
+            0
+        }
     }
 
-    fn assign_register_a(&mut self, value: u8) {
-        self.register_a = value;
-    }
-
-    fn register_b(&self) -> u8 {
-        self.register_b
-    }
-
-    fn assign_register_b(&mut self, value: u8) {
-        self.register_b = value;
+    fn assign_register(&mut self, register: Register, value: u8) {
+        self.registers.insert(register, value);
     }
 
     fn flags(&mut self) -> u8 {
@@ -71,8 +78,8 @@ impl Cpu {
 fn cpu_is_initialized() -> () {
     let cpu = Cpu::new();
 
-    assert_eq!(0, cpu.register_a);
-    assert_eq!(0, cpu.register_b);
+    assert_eq!(0, cpu.registers.get(&Register::A).unwrap().clone());
+    assert_eq!(0, cpu.registers.get(&Register::B).unwrap().clone());
     assert_eq!(0, cpu.flags);
 }
 
@@ -80,14 +87,14 @@ fn cpu_is_initialized() -> () {
 fn cpu_can_be_reset() -> () {
     let mut cpu = Cpu::new();
 
-    cpu.register_a = 0x1F;
-    cpu.register_b = 0xD4;
+    cpu.registers.insert(Register::A, 0x1F);
+    cpu.registers.insert(Register::B, 0xD4);
     cpu.flags = 0xAC;
 
     cpu.reset();
 
-    assert_eq!(0, cpu.register_a);
-    assert_eq!(0, cpu.register_b);
+    assert_eq!(0, cpu.registers.get(&Register::A).unwrap().clone());
+    assert_eq!(0, cpu.registers.get(&Register::B).unwrap().clone());
     assert_eq!(0, cpu.flags);
 }
 
@@ -95,18 +102,26 @@ fn cpu_can_be_reset() -> () {
 fn value_can_be_added_to_a_register() -> () {
     let mut cpu = Cpu::new();
 
-    cpu.assign_register_a(0x12);
-    assert_eq!(0x12, cpu.register_a());
-    assert_eq!(0x12, cpu.register_a);
+    cpu.assign_register(Register::A, 0x12);
+    assert_eq!(0x12, cpu.register(Register::A));
+    assert_eq!(0x12, cpu.registers.get(&Register::A).unwrap().clone());
 }
 
 #[test]
 fn value_can_be_added_to_b_register() -> () {
     let mut cpu = Cpu::new();
 
-    cpu.assign_register_b(0x12);
-    assert_eq!(0x12, cpu.register_b());
-    assert_eq!(0x12, cpu.register_b);
+    cpu.assign_register(Register::B, 0x12);
+    assert_eq!(0x12, cpu.register(Register::B));
+    assert_eq!(0x12, cpu.registers.get(&Register::B).unwrap().clone());
+}
+
+#[test]
+fn attempting_to_read_unitialized_register_causes_register_to_be_initialized_to_zero() {
+    let mut cpu = Cpu::new();
+
+    cpu.registers.remove(&Register::A);
+    assert_eq!(0, cpu.register(Register::A));
 }
 
 #[test]
