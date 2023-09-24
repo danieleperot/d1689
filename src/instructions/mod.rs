@@ -1,4 +1,5 @@
 pub mod add;
+pub mod load;
 
 use crate::cpu::{Cpu, Register};
 
