@@ -1,9 +1,6 @@
-const ERR_MIS_REGISTER: &str = "Missing register";
-const ERR_NOT_REGISTER: &str = "Argument is not a register";
-const ERR_MIS_VALUE: &str = "Missing value";
-const ERR_NOT_VALUE: &str = "Argument is not a byte";
-
+use super::{err_arg_mismatched, err_arg_missing};
 use super::{Argument, Instruction, InstructionError};
+use super::{ERR_MIS_REGISTER, ERR_MIS_VALUE, ERR_NOT_REGISTER, ERR_NOT_VALUE};
 use crate::cpu::{Cpu, Flag, Register};
 
 pub struct Add {}
@@ -39,14 +36,6 @@ fn add_directly(cpu: &mut Cpu, register: Register, value: u8) -> Result<(), Inst
     cpu.assign_flag(Flag::Zero, sum_as_byte == 0);
 
     Ok(())
-}
-
-fn err_arg_missing(position: u8, message: &str) -> InstructionError {
-    InstructionError::MissingArgument(position, message.to_string())
-}
-
-fn err_arg_mismatched(position: u8, message: &str) -> InstructionError {
-    InstructionError::MismatchedArgument(position, message.to_string())
 }
 
 #[test]
