@@ -6,7 +6,7 @@ const ERR_NOT_VALUE: &str = "Argument is not a byte";
 use super::{Argument, Instruction, InstructionError};
 use crate::cpu::{Cpu, Flag, Register};
 
-struct Add {}
+pub struct Add {}
 
 impl Instruction for Add {
     fn execute(cpu: &mut Cpu, arguments: Vec<Argument>) -> Result<(), InstructionError> {

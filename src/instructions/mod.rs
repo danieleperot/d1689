@@ -1,18 +1,18 @@
-mod add;
+pub mod add;
 
 use crate::cpu::{Cpu, Register};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum InstructionError {
+pub enum InstructionError {
     MissingArgument(u8, String),
     MismatchedArgument(u8, String),
 }
 
-enum Argument {
+pub enum Argument {
     Register(Register),
     Byte(u8),
 }
 
-trait Instruction {
+pub trait Instruction {
     fn execute(cpu: &mut Cpu, arguments: Vec<Argument>) -> Result<(), InstructionError>;
 }

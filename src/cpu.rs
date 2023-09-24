@@ -49,7 +49,7 @@ impl Cpu {
         self.registers.insert(register, value);
     }
 
-    fn flags(&mut self) -> u8 {
+    pub fn flags(&mut self) -> u8 {
         self.flags
     }
 
