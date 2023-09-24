@@ -17,6 +17,17 @@ fn main() {
     .unwrap();
     debug_cpu(&mut cpu);
 
+    println!("\nUse addition to copy content of A into B");
+    Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::B),
+            Argument::Register(Register::A),
+        ],
+    )
+    .unwrap();
+    debug_cpu(&mut cpu);
+
     println!("Adding 24 to register A containing 18");
     Add::execute(
         &mut cpu,

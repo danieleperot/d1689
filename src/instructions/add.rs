@@ -1,6 +1,6 @@
 use super::{err_arg_mismatched, err_arg_missing};
 use super::{Argument, Instruction, InstructionError};
-use super::{ERR_MIS_REGISTER, ERR_MIS_VALUE, ERR_NOT_REGISTER, ERR_NOT_VALUE};
+use super::{ERR_MIS_REGISTER, ERR_MIS_VALUE, ERR_NOT_REGISTER};
 use crate::cpu::{Cpu, Flag, Register};
 
 pub struct Add {}
@@ -10,11 +10,11 @@ impl Instruction for Add {
         match arguments.first() {
             None => Err(err_arg_missing(1, ERR_MIS_REGISTER)),
             Some(register) => match register {
-                Argument::Register(register) => match arguments.get(1) {
+                Argument::Register(dst) => match arguments.get(1) {
                     None => Err(err_arg_missing(2, ERR_MIS_VALUE)),
                     Some(value) => match value {
-                        Argument::Byte(value) => add_directly(cpu, *register, *value),
-                        _ => Err(err_arg_mismatched(2, ERR_NOT_VALUE)),
+                        Argument::Byte(src) => add_directly(cpu, *dst, *src),
+                        Argument::Register(src) => add_registers(cpu, *dst, *src),
                     },
                 },
                 _ => Err(err_arg_mismatched(1, ERR_NOT_REGISTER)),
@@ -24,12 +24,28 @@ impl Instruction for Add {
 }
 
 fn add_directly(cpu: &mut Cpu, register: Register, value: u8) -> Result<(), InstructionError> {
-    cpu.assign_flag(Flag::Carry, false);
-
     let register_value = cpu.register(register) as u16;
     let sum: u16 = register_value + (value as u16);
     let sum_as_byte = (sum & 0xFF) as u8;
 
+    assing_to_cpu(cpu, register, sum_as_byte, sum)
+}
+
+fn add_registers(cpu: &mut Cpu, dest: Register, source: Register) -> Result<(), InstructionError> {
+    let dest_value = cpu.register(dest) as u16;
+    let source_value = cpu.register(source) as u16;
+    let sum: u16 = source_value + dest_value;
+    let sum_as_byte = (sum & 0xFF) as u8;
+
+    assing_to_cpu(cpu, dest, sum_as_byte, sum)
+}
+
+fn assing_to_cpu(
+    cpu: &mut Cpu,
+    register: Register,
+    sum_as_byte: u8,
+    sum: u16,
+) -> Result<(), InstructionError> {
     cpu.assign_register(register, sum_as_byte);
 
     cpu.assign_flag(Flag::Carry, sum > 0xFF);
@@ -70,23 +86,6 @@ fn requires_a_second_parameter_to_be_provided() {
 
     let message = ERR_MIS_VALUE.to_string();
     let expected = InstructionError::MissingArgument(2, message);
-
-    assert!(result.is_err_and(|x| x == expected));
-}
-
-#[test]
-fn requires_u8_to_be_provided_as_second_parameter() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::A),
-        ],
-    );
-
-    let message = ERR_NOT_VALUE.to_string();
-    let expected = InstructionError::MismatchedArgument(2, message);
 
     assert!(result.is_err_and(|x| x == expected));
 }
@@ -160,6 +159,105 @@ fn when_addition_returns_value_larger_than_0xff_and_lsb_is_zero_then_both_flags_
     let result = Add::execute(
         &mut cpu,
         vec![Argument::Register(Register::B), Argument::Byte(156)],
+    );
+
+    assert!(result.is_ok());
+    assert_eq!(0, cpu.register(Register::B));
+    assert_eq!(true, cpu.flag(Flag::Carry));
+    assert_eq!(true, cpu.flag(Flag::Zero));
+}
+
+#[test]
+fn adds_source_register_to_the_destination_register() {
+    let mut cpu = Cpu::new();
+    cpu.assign_register(Register::A, 4);
+    cpu.assign_register(Register::B, 38);
+    let result = Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::A),
+            Argument::Register(Register::B),
+        ],
+    );
+
+    assert!(result.is_ok());
+    assert_eq!(42, cpu.register(Register::A));
+    assert_eq!(38, cpu.register(Register::B));
+    assert_eq!(false, cpu.flag(Flag::Carry));
+    assert_eq!(false, cpu.flag(Flag::Zero));
+}
+
+#[test]
+fn carry_and_zero_flags_are_reset_before_sum_of_registers() {
+    let mut cpu = Cpu::new();
+    cpu.assign_flag(Flag::Carry, true);
+    cpu.assign_flag(Flag::Zero, true);
+    cpu.assign_register(Register::B, 0xDE);
+
+    let result = Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::A),
+            Argument::Register(Register::B),
+        ],
+    );
+
+    assert!(result.is_ok());
+    assert_eq!(0xDE, cpu.register(Register::A));
+    assert_eq!(false, cpu.flag(Flag::Carry));
+    assert_eq!(false, cpu.flag(Flag::Zero));
+}
+
+#[test]
+fn when_sum_is_zero_then_zero_flag_is_set_also_when_adding_registers() {
+    let mut cpu = Cpu::new();
+    let result = Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::A),
+            Argument::Register(Register::B),
+        ],
+    );
+
+    assert!(result.is_ok());
+    assert_eq!(0x0, cpu.register(Register::A));
+    assert_eq!(false, cpu.flag(Flag::Carry));
+    assert_eq!(true, cpu.flag(Flag::Zero));
+}
+
+#[test]
+fn when_sum_is_larger_than_0xff_then_carry_flag_is_set_also_when_adding_registers() {
+    let mut cpu = Cpu::new();
+    cpu.assign_register(Register::A, 100);
+    cpu.assign_register(Register::B, 157);
+
+    let result = Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::A),
+            Argument::Register(Register::B),
+        ],
+    );
+
+    assert!(result.is_ok());
+    assert_eq!(1, cpu.register(Register::A));
+    assert_eq!(true, cpu.flag(Flag::Carry));
+    assert_eq!(false, cpu.flag(Flag::Zero));
+}
+
+#[test]
+fn when_sum_is_larger_than_0xff_and_lsb_is_zero_then_both_flags_are_set_also_when_adding_registers()
+{
+    let mut cpu = Cpu::new();
+    cpu.assign_register(Register::A, 156);
+    cpu.assign_register(Register::B, 100);
+
+    let result = Add::execute(
+        &mut cpu,
+        vec![
+            Argument::Register(Register::B),
+            Argument::Register(Register::A),
+        ],
     );
 
     assert!(result.is_ok());
