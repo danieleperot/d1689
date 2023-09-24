@@ -1,23 +1,19 @@
-use super::{err_arg_mismatched, err_arg_missing};
+use super::{err_arg_mismatched, err_arg_missing, register_first_arg};
 use super::{Argument, Instruction, InstructionError};
-use super::{ERR_MIS_REGISTER, ERR_MIS_VALUE, ERR_NOT_REGISTER, ERR_NOT_VALUE};
+use super::{ERR_MIS_VALUE, ERR_NOT_VALUE};
 use crate::cpu::{Cpu, Register};
 
 pub struct Load {}
 
 impl Instruction for Load {
     fn execute(cpu: &mut Cpu, arguments: Vec<Argument>) -> Result<(), InstructionError> {
-        match arguments.first() {
-            None => Err(err_arg_missing(1, ERR_MIS_REGISTER)),
-            Some(register) => match register {
-                Argument::Register(register) => match arguments.get(1) {
-                    None => Err(err_arg_missing(2, ERR_MIS_VALUE)),
-                    Some(value) => match value {
-                        Argument::Byte(value) => load_immediate(cpu, *register, *value),
-                        _ => Err(err_arg_mismatched(2, ERR_NOT_VALUE)),
-                    },
-                },
-                _ => Err(err_arg_mismatched(1, ERR_NOT_REGISTER)),
+        let register = register_first_arg(&arguments)?;
+
+        match arguments.get(1) {
+            None => Err(err_arg_missing(2, ERR_MIS_VALUE)),
+            Some(value) => match value {
+                Argument::Byte(value) => load_immediate(cpu, register, *value),
+                _ => Err(err_arg_mismatched(2, ERR_NOT_VALUE)),
             },
         }
     }
@@ -33,7 +29,7 @@ fn requires_register_to_be_provided_as_first_argument() {
     let mut cpu = Cpu::new();
     let result = Load::execute(&mut cpu, vec![]);
 
-    let message = ERR_MIS_REGISTER.to_string();
+    let message = super::ERR_MIS_REGISTER.to_string();
     let expected = InstructionError::MissingArgument(1, message);
 
     assert!(result.is_err_and(|x| x == expected));
@@ -44,7 +40,7 @@ fn requires_register_of_register_type_to_be_provided_as_first_argument() {
     let mut cpu = Cpu::new();
     let result = Load::execute(&mut cpu, vec![Argument::Byte(123)]);
 
-    let message = ERR_NOT_REGISTER.to_string();
+    let message = super::ERR_NOT_REGISTER.to_string();
     let expected = InstructionError::MismatchedArgument(1, message);
 
     assert!(result.is_err_and(|x| x == expected));

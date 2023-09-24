@@ -30,3 +30,13 @@ fn err_arg_missing(position: u8, message: &str) -> InstructionError {
 fn err_arg_mismatched(position: u8, message: &str) -> InstructionError {
     InstructionError::MismatchedArgument(position, message.to_string())
 }
+
+fn register_first_arg(arguments: &[Argument]) -> Result<Register, InstructionError> {
+    match arguments.first() {
+        None => Err(err_arg_missing(1, ERR_MIS_REGISTER)),
+        Some(first_arg) => match first_arg {
+            Argument::Register(register) => Ok(*register),
+            _ => Err(err_arg_mismatched(1, ERR_NOT_REGISTER)),
+        },
+    }
+}
