@@ -1,28 +1,26 @@
-#![allow(dead_code)]
-
 use std::collections::HashMap;
 
 #[repr(u8)]
 #[derive(Copy, Clone)]
-enum Flag {
-    CARRY = 0,
-    ZERO = 1,
+pub enum Flag {
+    Carry = 0,
+    Zero = 1,
 }
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-enum Register {
+pub enum Register {
     A,
     B,
 }
 
-struct Cpu {
+pub struct Cpu {
     registers: HashMap<Register, u8>,
     flags: u8,
 }
 
 impl Cpu {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut cpu = Self {
             registers: HashMap::new(),
             flags: 0,
@@ -38,16 +36,16 @@ impl Cpu {
         self.flags = 0;
     }
 
-    fn register(&mut self, register: Register) -> u8 {
+    pub fn register(&mut self, register: Register) -> u8 {
         if let Some(content) = self.registers.get(&register) {
-            content.clone()
+            *content
         } else {
             self.registers.insert(register, 0);
             0
         }
     }
 
-    fn assign_register(&mut self, register: Register, value: u8) {
+    pub fn assign_register(&mut self, register: Register, value: u8) {
         self.registers.insert(register, value);
     }
 
@@ -55,14 +53,14 @@ impl Cpu {
         self.flags
     }
 
-    fn flag(&mut self, position: Flag) -> bool {
+    pub fn flag(&mut self, position: Flag) -> bool {
         let position = position as u8;
         let bit = self.flags >> position & 1;
 
         bit > 0
     }
 
-    fn assign_flag(&mut self, position: Flag, is_set: bool) {
+    pub fn assign_flag(&mut self, position: Flag, is_set: bool) {
         let position = position as u8;
 
         // 0. get the correct mask
@@ -137,10 +135,10 @@ fn carry_flag_can_be_fetched() -> () {
     let mut cpu = Cpu::new();
 
     cpu.flags = 0b00110101;
-    assert_eq!(true, cpu.flag(Flag::CARRY));
+    assert_eq!(true, cpu.flag(Flag::Carry));
 
     cpu.flags = 0b00110100;
-    assert_eq!(false, cpu.flag(Flag::CARRY));
+    assert_eq!(false, cpu.flag(Flag::Carry));
 }
 
 #[test]
@@ -148,19 +146,19 @@ fn carry_flag_can_be_set() -> () {
     let mut cpu = Cpu::new();
 
     cpu.flags = 0b10111000;
-    cpu.assign_flag(Flag::CARRY, true);
+    cpu.assign_flag(Flag::Carry, true);
     assert_eq!(0b10111001, cpu.flags);
 
     cpu.flags = 0b10111001;
-    cpu.assign_flag(Flag::CARRY, false);
+    cpu.assign_flag(Flag::Carry, false);
     assert_eq!(0b10111000, cpu.flags);
 
     cpu.flags = 0b10111001;
-    cpu.assign_flag(Flag::CARRY, true);
+    cpu.assign_flag(Flag::Carry, true);
     assert_eq!(0b10111001, cpu.flags);
 
     cpu.flags = 0b10111000;
-    cpu.assign_flag(Flag::CARRY, false);
+    cpu.assign_flag(Flag::Carry, false);
     assert_eq!(0b10111000, cpu.flags);
 }
 
@@ -169,10 +167,10 @@ fn zero_flag_can_be_fetched() -> () {
     let mut cpu = Cpu::new();
 
     cpu.flags = 0b00110111;
-    assert_eq!(true, cpu.flag(Flag::ZERO));
+    assert_eq!(true, cpu.flag(Flag::Zero));
 
     cpu.flags = 0b00110101;
-    assert_eq!(false, cpu.flag(Flag::ZERO));
+    assert_eq!(false, cpu.flag(Flag::Zero));
 }
 
 #[test]
@@ -180,18 +178,18 @@ fn zero_flag_can_be_set() -> () {
     let mut cpu = Cpu::new();
 
     cpu.flags = 0b10111000;
-    cpu.assign_flag(Flag::ZERO, true);
+    cpu.assign_flag(Flag::Zero, true);
     assert_eq!(0b10111010, cpu.flags);
 
     cpu.flags = 0b10111010;
-    cpu.assign_flag(Flag::ZERO, false);
+    cpu.assign_flag(Flag::Zero, false);
     assert_eq!(0b10111000, cpu.flags);
 
     cpu.flags = 0b10111010;
-    cpu.assign_flag(Flag::ZERO, true);
+    cpu.assign_flag(Flag::Zero, true);
     assert_eq!(0b10111010, cpu.flags);
 
     cpu.flags = 0b10111000;
-    cpu.assign_flag(Flag::ZERO, false);
+    cpu.assign_flag(Flag::Zero, false);
     assert_eq!(0b10111000, cpu.flags);
 }
