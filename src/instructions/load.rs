@@ -24,64 +24,70 @@ fn load_immediate(cpu: &mut Cpu, register: Register, value: u8) -> Result<(), In
     Ok(())
 }
 
-#[test]
-fn requires_register_to_be_provided_as_first_argument() {
-    let mut cpu = Cpu::new();
-    let result = Load::execute(&mut cpu, vec![]);
+#[cfg(test)]
+mod tests {
+    use super::super::{ERR_MIS_REGISTER, ERR_NOT_REGISTER};
+    use super::*;
 
-    let message = super::ERR_MIS_REGISTER.to_string();
-    let expected = InstructionError::MissingArgument(1, message);
+    #[test]
+    fn requires_register_to_be_provided_as_first_argument() {
+        let mut cpu = Cpu::new();
+        let result = Load::execute(&mut cpu, vec![]);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_MIS_REGISTER.to_string();
+        let expected = InstructionError::MissingArgument(1, message);
 
-#[test]
-fn requires_register_of_register_type_to_be_provided_as_first_argument() {
-    let mut cpu = Cpu::new();
-    let result = Load::execute(&mut cpu, vec![Argument::Byte(123)]);
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    let message = super::ERR_NOT_REGISTER.to_string();
-    let expected = InstructionError::MismatchedArgument(1, message);
+    #[test]
+    fn requires_register_of_register_type_to_be_provided_as_first_argument() {
+        let mut cpu = Cpu::new();
+        let result = Load::execute(&mut cpu, vec![Argument::Byte(123)]);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_NOT_REGISTER.to_string();
+        let expected = InstructionError::MismatchedArgument(1, message);
 
-#[test]
-fn requires_a_second_parameter_to_be_provided() {
-    let mut cpu = Cpu::new();
-    let result = Load::execute(&mut cpu, vec![Argument::Register(Register::A)]);
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    let message = ERR_MIS_VALUE.to_string();
-    let expected = InstructionError::MissingArgument(2, message);
+    #[test]
+    fn requires_a_second_parameter_to_be_provided() {
+        let mut cpu = Cpu::new();
+        let result = Load::execute(&mut cpu, vec![Argument::Register(Register::A)]);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_MIS_VALUE.to_string();
+        let expected = InstructionError::MissingArgument(2, message);
 
-#[test]
-fn requires_u8_to_be_provided_as_second_parameter() {
-    let mut cpu = Cpu::new();
-    let result = Load::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::A),
-        ],
-    );
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    let message = ERR_NOT_VALUE.to_string();
-    let expected = InstructionError::MismatchedArgument(2, message);
+    #[test]
+    fn requires_u8_to_be_provided_as_second_parameter() {
+        let mut cpu = Cpu::new();
+        let result = Load::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::A),
+                Argument::Register(Register::A),
+            ],
+        );
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_NOT_VALUE.to_string();
+        let expected = InstructionError::MismatchedArgument(2, message);
 
-#[test]
-fn loads_provided_value_to_register() {
-    let mut cpu = Cpu::new();
-    let result = Load::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::A), Argument::Byte(0x42)],
-    );
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    assert!(result.is_ok());
-    assert_eq!(0x42, cpu.register(Register::A));
+    #[test]
+    fn loads_provided_value_to_register() {
+        let mut cpu = Cpu::new();
+        let result = Load::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::A), Argument::Byte(0x42)],
+        );
+
+        assert!(result.is_ok());
+        assert_eq!(0x42, cpu.register(Register::A));
+    }
 }

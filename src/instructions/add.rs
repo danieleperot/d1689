@@ -50,214 +50,220 @@ fn assing_to_cpu(
     Ok(())
 }
 
-#[test]
-fn requires_register_to_be_provided_as_first_argument() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(&mut cpu, vec![]);
+#[cfg(test)]
+mod tests {
+    use super::super::{ERR_MIS_REGISTER, ERR_NOT_REGISTER};
+    use super::*;
 
-    let message = super::ERR_MIS_REGISTER.to_string();
-    let expected = InstructionError::MissingArgument(1, message);
+    #[test]
+    fn requires_register_to_be_provided_as_first_argument() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(&mut cpu, vec![]);
 
-    // TODO: Would be cool to have a function to get a checksum of the current
-    // CPU state and verify that it wasn't changed
+        let message = ERR_MIS_REGISTER.to_string();
+        let expected = InstructionError::MissingArgument(1, message);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        // TODO: Would be cool to have a function to get a checksum of the current
+        // CPU state and verify that it wasn't changed
 
-#[test]
-fn requires_register_of_register_type_to_be_provided_as_first_argument() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(&mut cpu, vec![Argument::Byte(123)]);
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    let message = super::ERR_NOT_REGISTER.to_string();
-    let expected = InstructionError::MismatchedArgument(1, message);
+    #[test]
+    fn requires_register_of_register_type_to_be_provided_as_first_argument() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(&mut cpu, vec![Argument::Byte(123)]);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_NOT_REGISTER.to_string();
+        let expected = InstructionError::MismatchedArgument(1, message);
 
-#[test]
-fn requires_a_second_parameter_to_be_provided() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(&mut cpu, vec![Argument::Register(Register::A)]);
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    let message = ERR_MIS_VALUE.to_string();
-    let expected = InstructionError::MissingArgument(2, message);
+    #[test]
+    fn requires_a_second_parameter_to_be_provided() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(&mut cpu, vec![Argument::Register(Register::A)]);
 
-    assert!(result.is_err_and(|x| x == expected));
-}
+        let message = ERR_MIS_VALUE.to_string();
+        let expected = InstructionError::MissingArgument(2, message);
 
-#[test]
-fn adds_value_to_the_specified_cpu_register_a() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::A), Argument::Byte(0xDE)],
-    );
+        assert!(result.is_err_and(|x| x == expected));
+    }
 
-    assert!(result.is_ok());
-    assert_eq!(0xDE, cpu.register(Register::A));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+    #[test]
+    fn adds_value_to_the_specified_cpu_register_a() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::A), Argument::Byte(0xDE)],
+        );
 
-#[test]
-fn carry_and_zero_flags_are_reset_before_sum() {
-    let mut cpu = Cpu::new();
-    cpu.assign_flag(Flag::Carry, true);
-    cpu.assign_flag(Flag::Zero, true);
+        assert!(result.is_ok());
+        assert_eq!(0xDE, cpu.register(Register::A));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::A), Argument::Byte(0xDE)],
-    );
+    #[test]
+    fn carry_and_zero_flags_are_reset_before_sum() {
+        let mut cpu = Cpu::new();
+        cpu.assign_flag(Flag::Carry, true);
+        cpu.assign_flag(Flag::Zero, true);
 
-    assert!(result.is_ok());
-    assert_eq!(0xDE, cpu.register(Register::A));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+        let result = Add::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::A), Argument::Byte(0xDE)],
+        );
 
-#[test]
-fn when_addition_returns_zero_then_zero_flag_is_set() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::A), Argument::Byte(0x0)],
-    );
+        assert!(result.is_ok());
+        assert_eq!(0xDE, cpu.register(Register::A));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    assert!(result.is_ok());
-    assert_eq!(0x0, cpu.register(Register::A));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(true, cpu.flag(Flag::Zero));
-}
+    #[test]
+    fn when_addition_returns_zero_then_zero_flag_is_set() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::A), Argument::Byte(0x0)],
+        );
 
-#[test]
-fn when_addition_returns_value_larger_than_0xff_then_carry_flag_is_set() {
-    let mut cpu = Cpu::new();
-    cpu.assign_register(Register::A, 100);
+        assert!(result.is_ok());
+        assert_eq!(0x0, cpu.register(Register::A));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(true, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::A), Argument::Byte(157)],
-    );
+    #[test]
+    fn when_addition_returns_value_larger_than_0xff_then_carry_flag_is_set() {
+        let mut cpu = Cpu::new();
+        cpu.assign_register(Register::A, 100);
 
-    assert!(result.is_ok());
-    assert_eq!(1, cpu.register(Register::A));
-    assert_eq!(true, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+        let result = Add::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::A), Argument::Byte(157)],
+        );
 
-#[test]
-fn when_addition_returns_value_larger_than_0xff_and_lsb_is_zero_then_both_flags_are_set() {
-    let mut cpu = Cpu::new();
-    cpu.assign_register(Register::B, 100);
+        assert!(result.is_ok());
+        assert_eq!(1, cpu.register(Register::A));
+        assert_eq!(true, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![Argument::Register(Register::B), Argument::Byte(156)],
-    );
+    #[test]
+    fn when_addition_returns_value_larger_than_0xff_and_lsb_is_zero_then_both_flags_are_set() {
+        let mut cpu = Cpu::new();
+        cpu.assign_register(Register::B, 100);
 
-    assert!(result.is_ok());
-    assert_eq!(0, cpu.register(Register::B));
-    assert_eq!(true, cpu.flag(Flag::Carry));
-    assert_eq!(true, cpu.flag(Flag::Zero));
-}
+        let result = Add::execute(
+            &mut cpu,
+            vec![Argument::Register(Register::B), Argument::Byte(156)],
+        );
 
-#[test]
-fn adds_source_register_to_the_destination_register() {
-    let mut cpu = Cpu::new();
-    cpu.assign_register(Register::A, 4);
-    cpu.assign_register(Register::B, 38);
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::B),
-        ],
-    );
+        assert!(result.is_ok());
+        assert_eq!(0, cpu.register(Register::B));
+        assert_eq!(true, cpu.flag(Flag::Carry));
+        assert_eq!(true, cpu.flag(Flag::Zero));
+    }
 
-    assert!(result.is_ok());
-    assert_eq!(42, cpu.register(Register::A));
-    assert_eq!(38, cpu.register(Register::B));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+    #[test]
+    fn adds_source_register_to_the_destination_register() {
+        let mut cpu = Cpu::new();
+        cpu.assign_register(Register::A, 4);
+        cpu.assign_register(Register::B, 38);
+        let result = Add::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::A),
+                Argument::Register(Register::B),
+            ],
+        );
 
-#[test]
-fn carry_and_zero_flags_are_reset_before_sum_of_registers() {
-    let mut cpu = Cpu::new();
-    cpu.assign_flag(Flag::Carry, true);
-    cpu.assign_flag(Flag::Zero, true);
-    cpu.assign_register(Register::B, 0xDE);
+        assert!(result.is_ok());
+        assert_eq!(42, cpu.register(Register::A));
+        assert_eq!(38, cpu.register(Register::B));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::B),
-        ],
-    );
+    #[test]
+    fn carry_and_zero_flags_are_reset_before_sum_of_registers() {
+        let mut cpu = Cpu::new();
+        cpu.assign_flag(Flag::Carry, true);
+        cpu.assign_flag(Flag::Zero, true);
+        cpu.assign_register(Register::B, 0xDE);
 
-    assert!(result.is_ok());
-    assert_eq!(0xDE, cpu.register(Register::A));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+        let result = Add::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::A),
+                Argument::Register(Register::B),
+            ],
+        );
 
-#[test]
-fn when_sum_is_zero_then_zero_flag_is_set_also_when_adding_registers() {
-    let mut cpu = Cpu::new();
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::B),
-        ],
-    );
+        assert!(result.is_ok());
+        assert_eq!(0xDE, cpu.register(Register::A));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    assert!(result.is_ok());
-    assert_eq!(0x0, cpu.register(Register::A));
-    assert_eq!(false, cpu.flag(Flag::Carry));
-    assert_eq!(true, cpu.flag(Flag::Zero));
-}
+    #[test]
+    fn when_sum_is_zero_then_zero_flag_is_set_also_when_adding_registers() {
+        let mut cpu = Cpu::new();
+        let result = Add::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::A),
+                Argument::Register(Register::B),
+            ],
+        );
 
-#[test]
-fn when_sum_is_larger_than_0xff_then_carry_flag_is_set_also_when_adding_registers() {
-    let mut cpu = Cpu::new();
-    cpu.assign_register(Register::A, 100);
-    cpu.assign_register(Register::B, 157);
+        assert!(result.is_ok());
+        assert_eq!(0x0, cpu.register(Register::A));
+        assert_eq!(false, cpu.flag(Flag::Carry));
+        assert_eq!(true, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::A),
-            Argument::Register(Register::B),
-        ],
-    );
+    #[test]
+    fn when_sum_is_larger_than_0xff_then_carry_flag_is_set_also_when_adding_registers() {
+        let mut cpu = Cpu::new();
+        cpu.assign_register(Register::A, 100);
+        cpu.assign_register(Register::B, 157);
 
-    assert!(result.is_ok());
-    assert_eq!(1, cpu.register(Register::A));
-    assert_eq!(true, cpu.flag(Flag::Carry));
-    assert_eq!(false, cpu.flag(Flag::Zero));
-}
+        let result = Add::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::A),
+                Argument::Register(Register::B),
+            ],
+        );
 
-#[test]
-fn when_sum_is_larger_than_0xff_and_lsb_is_zero_then_both_flags_are_set_also_when_adding_registers()
-{
-    let mut cpu = Cpu::new();
-    cpu.assign_register(Register::A, 156);
-    cpu.assign_register(Register::B, 100);
+        assert!(result.is_ok());
+        assert_eq!(1, cpu.register(Register::A));
+        assert_eq!(true, cpu.flag(Flag::Carry));
+        assert_eq!(false, cpu.flag(Flag::Zero));
+    }
 
-    let result = Add::execute(
-        &mut cpu,
-        vec![
-            Argument::Register(Register::B),
-            Argument::Register(Register::A),
-        ],
-    );
+    #[test]
+    fn when_sum_is_larger_than_0xff_and_lsb_is_zero_then_both_flags_are_set_also_when_adding_registers(
+    ) {
+        let mut cpu = Cpu::new();
+        cpu.assign_register(Register::A, 156);
+        cpu.assign_register(Register::B, 100);
 
-    assert!(result.is_ok());
-    assert_eq!(0, cpu.register(Register::B));
-    assert_eq!(true, cpu.flag(Flag::Carry));
-    assert_eq!(true, cpu.flag(Flag::Zero));
+        let result = Add::execute(
+            &mut cpu,
+            vec![
+                Argument::Register(Register::B),
+                Argument::Register(Register::A),
+            ],
+        );
+
+        assert!(result.is_ok());
+        assert_eq!(0, cpu.register(Register::B));
+        assert_eq!(true, cpu.flag(Flag::Carry));
+        assert_eq!(true, cpu.flag(Flag::Zero));
+    }
 }
