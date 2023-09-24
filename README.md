@@ -33,6 +33,7 @@ instructions have to be manually executed one by one.
 ### Acccumulator
 `ADD [destination register], [8 bit value]`
 * sets `Z` if the result was zero, sets `C` if the result was over `0xFF` (overflow)
+
 `ADD [destination register], [source register]`
 * sets `Z` if the result was zero, sets `C` if the result was over `0xFF` (overflow)
 
